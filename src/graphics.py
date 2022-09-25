@@ -35,7 +35,7 @@ def plot_histogram_grid(images: List[np.array], title: str, images_names: List[s
     fig.suptitle(title, fontsize=20)
     for idx, img in enumerate(images):
         # Add an ax to the plot
-        plt.subplot(2, 3, idx + 1)
+        plt.subplot(2, len(images), idx + 1)
         # Obtain the gray-level histogram
         hist, _ = np.histogram(img.flatten(), 256, [0, 256])
         # Plot the histogram
