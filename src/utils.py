@@ -25,3 +25,31 @@ def apply_flood_fill(img: np.array) -> np.array:
 
     # Combine the original and inverted flood-filled image to obtain the foreground
     return img | img_copy_inv
+
+
+class ColourSpace:
+    _COLOR_SPACE_IDS = {
+        'BGR': None,
+        'HSV': cv2.COLOR_BGR2HSV_FULL,
+        'HLS': cv2.COLOR_BGR2HLS_FULL,
+        'LUV': cv2.COLOR_BGR2Luv,
+        'LAB': cv2.COLOR_BGR2LAB,
+        'YCrCb': cv2.COLOR_BGR2YCrCb
+    }
+
+    _COLOR_SPACE_CHANNEL_NAMES = {
+        'BGR': ['B', 'G', 'R'],
+        'HSV': ['H', 'S', 'V'],
+        'HLS': ['H', 'L', 'S'],
+        'LUV': ['L', 'U', 'V'],
+        'LAB': ['L', 'A', 'B'],
+        'YCrCb': ['Y', 'Cr', 'Cb']
+    }
+
+    def __init__(self, colour_space: str):
+        self.name = colour_space
+        if self._COLOR_SPACE_IDS[self.name] is None:
+            self.bgr_to_color_space = lambda img: img
+        else:
+            self.bgr_to_color_space = lambda img: cv2.cvtColor(img, self._COLOR_SPACE_IDS[self.name])
+        self.channels = self._COLOR_SPACE_CHANNEL_NAMES[self.name]
