@@ -97,23 +97,28 @@ def plot_histogram_grid(images: List[np.array], images_names: List[str] = None, 
     plt.show()
 
 
-def highlight_unmasked_region(img: np.array, mask: np.array, title: str, highlight_channel: str = 'green') -> None:
+def get_highlighted_roi_by_mask(img: np.array, mask: np.array, highlight_channel: str = 'green') -> np.array:
     channel_map = {'blue': 0, 'green': 1, 'red': 2}
     # Turn mask into BGR image
     mask = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
     # Force the bits of every channel except the selected one at 0
     mask[:, :, [i for i in range(3) if i != channel_map[highlight_channel]]] = 0
     # Highlight the unmasked ROI
-    highlighted_roi = cv.addWeighted(mask, 0.3, img, 1, 0)
+    return cv.addWeighted(mask, 0.3, img, 1, 0)
+
+
+def highlight_unmasked_region(img: np.array, mask: np.array, title: str, highlight_channel: str = 'green') -> None:
+    # Get image with highlighted ROI
+    highlighted_roi = get_highlighted_roi_by_mask(img, mask, highlight_channel)
     # Plot image with highlighted ROI
     plt.imshow(cv.cvtColor(highlighted_roi, cv.COLOR_BGR2RGB))
     plt.title(title, fontsize=16)
-    plt.axes('off')
+    plt.axis('off')
     plt.show()
 
 
 def plot_colour_distribution_3d(images: List[np.array], images_names: List[str], colour_space: ColourSpace,
-                                masks: List[np.array] = None) -> None:
+                                masks: List[np.array] = None, title: str = None) -> None:
     fig = plt.figure(figsize=(15, 5))
 
     for idx, colour_img in enumerate(images):
@@ -149,7 +154,10 @@ def plot_colour_distribution_3d(images: List[np.array], images_names: List[str],
         ax.set_zlabel(f'Channel {channel_names[2]}')
         ax.set_title(f'Color distribution for {images_names[idx]}')
 
-    fig.suptitle(f'Distribution of pixels in the {colour_space.name} colour space', fontsize=16)
+    if title is None:
+        fig.suptitle(f'Distribution of pixels in the {colour_space.name} colour space', fontsize=16)
+    else:
+        fig.suptitle(title, fontsize=16)
     # Remove extra space between the sub-images
     plt.tight_layout()
     plt.show()
