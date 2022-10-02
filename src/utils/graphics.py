@@ -99,7 +99,10 @@ def plot_histogram_grid(images: List[np.array], images_names: List[str] = None, 
 
 def get_highlighted_roi_by_mask(img: np.array, mask: np.array, highlight_channel: str = 'green') -> np.array:
     channel_map = {'blue': 0, 'green': 1, 'red': 2}
-    # Turn mask into BGR image
+    # Turn img into BGR image if img is a Grayscale image
+    if len(img.shape) == 2:
+        img = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
+    # Turn mask into BGR image if img is a BGR image
     mask = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
     # Force the bits of every channel except the selected one at 0
     mask[:, :, [i for i in range(3) if i != channel_map[highlight_channel]]] = 0
