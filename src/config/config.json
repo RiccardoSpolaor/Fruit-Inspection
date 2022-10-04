@@ -1,0 +1,32 @@
+{
+  "healthy_fruit_means": [
+    "mean_healthy_fruit_0.npy",
+    "mean_healthy_fruit_1.npy"
+  ],
+  "healthy_fruit_inv_covs": [
+    "inv_cov_healthy_fruit_0.npy",
+    "inv_cov_healthy_fruit_1.npy"
+
+  ],
+  "roi_means": [
+    "mean_roi_0.npy",
+    "mean_roi_1.npy",
+    "mean_roi_2.npy"
+
+  ],
+  "roi_inv_covs": [
+    "inv_cov_roi_0.npy",
+    "inv_cov_roi_1.npy",
+    "inv_cov_roi_2.npy"
+  ],
+  "roi_thresholds": [
+    7,
+    1.5,
+    7
+  ],
+  "roi_related_fruit": [
+    0,
+    0,
+    1
+  ]
+}
