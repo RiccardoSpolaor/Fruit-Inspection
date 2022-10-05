@@ -2,24 +2,61 @@ import argparse
 
 from utils import *
 
-_TWEAK_FACTOR = .3
-_SIGMA = 1.
-_THRESHOLD_1 = 60
-_THRESHOLD_2 = 130
 
+def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, image_name: str = '', tweak_factor: float = .3,
+                   sigma: float = 1., threshold_1: int = 60, threshold_2: int = 130,
+                   verbose: bool = True) -> Tuple[int, np.ndarray, np.ndarray]:
+    """
+    Function that executes the task of detecting the defects of a fruit.
 
-def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, image_name: str, verbose: bool = True) -> None:
+    It firstly masks the fruit, then it looks for the defects.
+
+    If the task is run in `verbose` mode, the visualization of the defect regions of the fruit is plotted.
+
+    Parameters
+    ----------
+    colour_image: np.ndarray
+        Colour image of the fruit whose defects have to be detected
+    nir_image: np.ndarray
+        Near Infra-Red image of the same fruit represented in `colour_image`
+    image_name: str, optional
+        Optional name of the image to visualize during the plotting operations
+    tweak_factor: float
+        Tweak factor to apply to the "Tweaked Otsu's Algorithm" in order to obtain the binary mask.
+    sigma: float
+        Value of sigma to apply to the Gaussian Blur operation before the use of Canny's algorithm
+    threshold_1: int
+        Value of the first threshold that is used in Canny's algorithm
+    threshold_2: int
+        Value of the second threshold that is used in Canny's algorithm
+    verbose: bool, optional
+        Whether to run the function in verbose mode or not (default: True)
+
+    Returns
+    -------
+    retval: int
+        Number of russet regions found in the fruit
+    stats: np.ndarray
+        Array of statistics about each russet region:
+            - The leftmost (x) coordinate which is the inclusive start of the bounding box in the horizontal direction;
+            - The topmost (y) coordinate which is the inclusive start of the bounding box in the vertical direction;
+            - The horizontal size of the bounding box;
+            - The vertical size of the bounding box;
+            - The total area (in pixels) of the russet.
+    centroids: np.ndarray
+        Array of centroid points about each russet region.
+    """
     # Filter the NIR image by median blur
     f_nir_image = cv.medianBlur(nir_image, 5)
 
     # Get the fruit mask through Tweaked Otsu's algorithm
-    mask = get_fruit_mask(f_nir_image, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=_TWEAK_FACTOR)
+    mask = get_fruit_mask(f_nir_image, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
 
     # Apply the mask to the filtered NIR image
     m_nir_image = mask + f_nir_image
 
-    # Obtain edge mask through Gaussian Blur and Canny's method
-    edge_mask = apply_gaussian_blur_and_canny(m_nir_image, _SIGMA, _THRESHOLD_1, _THRESHOLD_2)
+    # Get the edge mask through Gaussian Blur and Canny's method
+    edge_mask = apply_gaussian_blur_and_canny(m_nir_image, sigma, threshold_1, threshold_2)
 
     # Erode the mask to get rid of the edges of the bound of the fruit
     erode_element = cv.getStructuringElement(cv.MORPH_RECT, (15, 15))
@@ -39,40 +76,73 @@ def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, image_name: 
     if verbose:
         print(f'Detected {retval - 1} defect{"" if retval - 1 == 1 else "s"} for image {image_name}.')
 
+        # Get highlighted defects on the fruit
         highlighted_roi = get_highlighted_roi_by_mask(colour_image, defect_mask, 'red')
 
         circled_defects = np.copy(colour_image)
 
-        # Get stats of all connected components except the background (position: 0)
         for i in range(1, retval):
             s = stats[i]
             # Draw a red ellipse around the defect
-            cv.ellipse(circled_defects, tuple(int(c) for c in centroids[i]),
-                       (s[cv.CC_STAT_WIDTH] // 2 + 10, s[cv.CC_STAT_HEIGHT] // 2 + 10),
-                       0, 0, 360, (0, 0, 255), 3)
+            cv.ellipse(circled_defects, center=tuple(int(c) for c in centroids[i]),
+                       axes=(s[cv.CC_STAT_WIDTH] // 2 + 10, s[cv.CC_STAT_HEIGHT] // 2 + 10),
+                       angle=0, startAngle=0, endAngle=360, color=(0, 0, 255), thickness=3)
 
         plot_image_grid([highlighted_roi, circled_defects],
                         ['Detected defects ROI', 'Detected defects areas'],
                         f'Defects of the fruit {image_name}')
+    return retval - 1, stats[1:], centroids[1:]
+
+
+def _main():
+    parser = argparse.ArgumentParser(description='Script for applying defect detection on a fruit.')
+
+    parser.add_argument('fruit-image-path', metavar='Fruit image path', type=str,
+                        help='The path of the colour image of the fruit.')
+
+    parser.add_argument('fruit-nir-image-path', metavar='Fruit image path', type=str,
+                        help='The path of the Near Infra-Red image of the fruit.')
+
+    parser.add_argument('image-name', metavar='Image name', type=str, help='The name of the image.', default='',
+                        nargs='?')
+
+    parser.add_argument('--tweak-factor', '-tf', type=float, default=.3, nargs='?',
+                        help='Tweak factor for obtaining the binary mask.', required=False)
+
+    parser.add_argument('--sigma', '-s', type=float, default=1., nargs='?',
+                        help="Sigma to apply to the Gaussian Blur operation before Canny's algorithm",
+                        required=False)
+
+    parser.add_argument('--threshold-1', '-t1', type=int, default=60, nargs='?',
+                        help="First threshold that is used in Canny's algorithm.", required=False)
+
+    parser.add_argument('--threshold-2', '-t2', type=int, default=130, nargs='?',
+                        help="Second threshold that is used in Canny's algorithm.", required=False)
+
+    parser.add_argument('--no-verbose', '-nv', action='store_true', help='Skip the visualization of the results.')
+
+    # Initialize parser
+    arguments = parser.parse_args()
+
+    # Read colour image
+    fruit_image_path = vars(arguments)['fruit-image-path']
+    colour_image = cv.imread(fruit_image_path)
+
+    # Read NIR image
+    fruit_nir_image_path = vars(arguments)['fruit-nir-image-path']
+    nir_image = cv.imread(fruit_nir_image_path, cv.IMREAD_GRAYSCALE)
+
+    image_name = vars(arguments)['image-name']
+
+    tweak_factor = arguments.tweak_factor
+    sigma = arguments.sigma
+    threshold_1 = arguments.threshold_1
+    threshold_2 = arguments.threshold_2
+    verbose = not arguments.no_verbose
+
+    detect_defects(colour_image, nir_image, image_name=image_name, tweak_factor=tweak_factor, sigma=sigma,
+                   threshold_1=threshold_1, threshold_2=threshold_2, verbose=verbose)
 
 
 if __name__ == '__main__':
-    # Image names
-    nir_names, colour_names = [[f'C{j}_00000{i}.png' for i in range(1, 4)] for j in [0, 1]]
-
-    # Directory where the images are saved
-    DIR = 'images/first task/'
-
-    parser = argparse.ArgumentParser(description='Script for applying defect detection on a fruit.')
-
-    parser.add_argument('fruit-index', metavar='fruit.index', type=int, choices=np.arange(1, 4),
-                        help='The index of the fruit whose defect have to be detected.')
-
-    arguments = parser.parse_args()
-
-    fruit_index = vars(arguments)['fruit-index']
-
-    nir_img = cv.imread(f'{DIR}{nir_names[fruit_index]}', cv.IMREAD_GRAYSCALE)
-    colour_img = cv.imread(f'{DIR}{colour_names[fruit_index]}')
-
-    detect_defects(colour_img, nir_img, colour_names[fruit_index])
+    _main()

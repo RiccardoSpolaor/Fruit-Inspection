@@ -8,7 +8,7 @@ from utils import *
 
 def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List[np.ndarray],
                   roi_means: List[List[np.ndarray]], roi_inv_covs: List[List[np.ndarray]],
-                  roi_thresholds: List[List[int]], tweak_factor, image_name: str = None,
+                  roi_thresholds: List[List[int]], image_name: str = '', tweak_factor: int = .4,
                   verbose: bool = True) -> Tuple[int, np.ndarray, np.ndarray]:
     """
     Function that executes the task of detecting the russet regions of a fruit.
@@ -36,10 +36,10 @@ def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List
     roi_thresholds: List[List[int]]
         List of list of thresholds. Pixels of the colour image having a Mahalanobis distance greater than a certain
         thresholds are not considered part of the corresponding russet region (one or multiple per fruit class)
-    tweak_factor: float
-        Tweak factor to apply to the "Tweaked Otsu's Algorithm" in order to obtain the binary mask.
     image_name: str, optional
         Optional name of the image to visualize during the plotting operations
+    tweak_factor: float, optional
+        Tweak factor to apply to the "Tweaked Otsu's Algorithm" in order to obtain the binary mask.
     verbose: bool, optional
         Whether to run the function in verbose mode or not (default: True)
 
@@ -57,29 +57,29 @@ def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List
     centroids: np.ndarray
         Array of centroid points about each russet region.
     """
-    # Apply median filter to the image
+    # Filter the image by median blur
     f_img = cv.medianBlur(image, 5)
 
     # Convert the image to gray-scale
     gray_img = cv.cvtColor(f_img, cv.COLOR_BGR2GRAY)
 
-    # Get the mask of the fruit
+    # Get the fruit mask through Tweaked Otsu's algorithm
     mask = get_fruit_mask(gray_img, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
 
-    # Mask the filtered image
+    # Apply the mask to the filtered colour image
     m_image = cv.cvtColor(mask, cv.COLOR_GRAY2BGR) + f_img
 
     # Turn BGR image to LAB
     m_lab_image = ColourSpace('LAB').bgr_to_color_space(m_image)
     channels = (1, 2)
 
-    # Get fruit class
+    # Get the fruit class
     fruit_class = get_fruit_class(m_lab_image, h_means, h_inv_covs, channels, display_image=image if verbose else None)
 
     if verbose:
         print(f'Class of fruit = {fruit_class}')
 
-    # Erode the mask
+    # Erode the mask to get rid of artefacts to the bound of the fruit after the russet detection is applied
     element = cv.getStructuringElement(cv.MORPH_ELLIPSE, (15, 15))
     eroded_mask = cv.erode(mask, element)
 
@@ -91,13 +91,13 @@ def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List
     for m, c, t in zip(roi_means[fruit_class], roi_inv_covs[fruit_class], roi_thresholds[fruit_class]):
         roi_mask += get_mahalanobis_distance_img(m_lab_image, m, c, t, channels)
 
-    # Apply a bitwise AND between the eroded mask and the ROI mask
+    # Remove artifacts from the ROI mask
     roi_mask = roi_mask & eroded_mask
 
     # Apply median blur to de-noise the mask and smooth it
     roi_mask = cv.medianBlur(roi_mask, 5)
 
-    # Apply close operation to close small gaps in the mask
+    # Apply Closing operation to close small gaps in the ROI mask
     roi_mask = cv.morphologyEx(roi_mask, cv.MORPH_CLOSE, element)
 
     # Perform a connected components labeling to detect defects
@@ -113,13 +113,10 @@ def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List
 
         for i in range(1, retval):
             s = stats[i]
-            # Draw a red ellipse around the defect
+            # Draw a red ellipse around the russet
             cv.ellipse(circled_russets, center=tuple(int(c) for c in centroids[i]),
                        axes=(s[cv.CC_STAT_WIDTH] // 2 + 10, s[cv.CC_STAT_HEIGHT] // 2 + 10),
                        angle=0, startAngle=0, endAngle=360, color=(0, 0, 255), thickness=3)
-
-        if image_name is None:
-            image_name = ''
 
         plot_image_grid([highlighted_roi, circled_russets], ['Detected russets ROI', 'Detected russets areas'],
                         f'Russets of the fruit in image {image_name}')
@@ -132,7 +129,7 @@ def _main():
     parser.add_argument('fruit-image-path', metavar='Fruit image path', type=str,
                         help='The path of the colour image of the fruit.')
 
-    parser.add_argument('image-name', metavar='Image name', type=str, help='The name of the image.', default=None,
+    parser.add_argument('image-name', metavar='Image name', type=str, help='The name of the image.', default='',
                         nargs='?')
 
     parser.add_argument('--config-file-path', '-cf', type=str, help='The path of the configuration file.',
@@ -190,7 +187,7 @@ def _main():
 
     # Apply russet detection
     detect_russet(colour_image, healthy_fruit_means, healthy_fruit_inv_covs, roi_means_sorted, roi_inv_cov_sorted,
-                  roi_thresholds_sorted, tweak_factor, image_name=image_name, verbose=verbose)
+                  roi_thresholds_sorted, tweak_factor=tweak_factor, image_name=image_name, verbose=verbose)
 
 
 if __name__ == '__main__':
