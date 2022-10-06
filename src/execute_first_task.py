@@ -59,7 +59,7 @@ def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, image_name: 
     mask = get_fruit_segmentation_mask(f_nir_image, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
 
     # Apply the mask to the filtered NIR image
-    m_nir_image = mask + f_nir_image
+    m_nir_image = apply_mask_to_image(f_nir_image, mask)
 
     # Get the edge mask through Gaussian Blur and Canny's method
     edge_mask = apply_gaussian_blur_and_canny(m_nir_image, sigma, threshold_1, threshold_2)
@@ -69,7 +69,7 @@ def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, image_name: 
     eroded_mask = cv.erode(mask, erode_element)
 
     # Remove background edges from the edge mask
-    edge_mask = edge_mask & eroded_mask
+    edge_mask = apply_mask_to_image(edge_mask, eroded_mask)
 
     # Apply Closing operation to fill the defects according to the edges and obtain the defect mask
     close_element = cv.getStructuringElement(cv.MORPH_ELLIPSE, (50, 50))
