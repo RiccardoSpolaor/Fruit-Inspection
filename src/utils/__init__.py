@@ -1,5 +1,5 @@
-from .graphics import *
-from .general import *
-from .threshold import *
-from .edge import *
-from .colour_threshold import *
+"""
+Utils module
+"""
+from __future__ import absolute_import
+from . import colour as c, colour_threshold, edge, general, threshold

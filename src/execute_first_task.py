@@ -1,6 +1,11 @@
 import argparse
+import cv2 as cv
+import numpy as np
+from typing import Tuple
 
-from utils import *
+from utils.edge import *
+from utils.general import *
+from utils.threshold import *
 
 
 def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, image_name: str = '', tweak_factor: float = .3,
@@ -21,14 +26,15 @@ def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, image_name: 
         Near Infra-Red image of the same fruit represented in `colour_image`
     image_name: str, optional
         Optional name of the image to visualize during the plotting operations
-    tweak_factor: float
-        Tweak factor to apply to the "Tweaked Otsu's Algorithm" in order to obtain the binary mask.
-    sigma: float
-        Value of sigma to apply to the Gaussian Blur operation before the use of Canny's algorithm
-    threshold_1: int
-        Value of the first threshold that is used in Canny's algorithm
-    threshold_2: int
-        Value of the second threshold that is used in Canny's algorithm
+    tweak_factor: float, optional
+        Tweak factor to apply to the "Tweaked Otsu's Algorithm" in order to obtain the binary segmentation mask
+        (default: 0.3)
+    sigma: float, optional
+        Value of sigma to apply to the Gaussian Blur operation before the use of Canny's algorithm (default: 1)
+    threshold_1: int, optional
+        Value of the first threshold that is used in Canny's algorithm (default: 60)
+    threshold_2: int, optional
+        Value of the second threshold that is used in Canny's algorithm (default: 120)
     verbose: bool, optional
         Whether to run the function in verbose mode or not (default: True)
 
@@ -50,7 +56,7 @@ def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, image_name: 
     f_nir_image = cv.medianBlur(nir_image, 5)
 
     # Get the fruit mask through Tweaked Otsu's algorithm
-    mask = get_fruit_mask(f_nir_image, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
+    mask = get_fruit_segmentation_mask(f_nir_image, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
 
     # Apply the mask to the filtered NIR image
     m_nir_image = mask + f_nir_image

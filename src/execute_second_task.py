@@ -1,15 +1,21 @@
 import argparse
+import cv2 as cv
 import json
 import numpy as np
 import os
 
-from utils import *
+from typing import List, Tuple
+
+from utils.colour import *
+from utils.colour_threshold import *
+from utils.general import *
+from utils.threshold import *
 
 
 def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List[np.ndarray],
                   roi_means: List[List[np.ndarray]], roi_inv_covs: List[List[np.ndarray]],
-                  roi_thresholds: List[List[int]], image_name: str = '', tweak_factor: int = .4,
-                  verbose: bool = True) -> Tuple[int, np.ndarray, np.ndarray]:
+                  roi_thresholds: List[List[int]], class_threshold: float = 3, tweak_factor: float = .4,
+                  image_name: str = '', verbose: bool = True) -> Tuple[int, np.ndarray, np.ndarray]:
     """
     Function that executes the task of detecting the russet regions of a fruit.
 
@@ -36,10 +42,15 @@ def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List
     roi_thresholds: List[List[int]]
         List of list of thresholds. Pixels of the colour image having a Mahalanobis distance greater than a certain
         thresholds are not considered part of the corresponding russet region (one or multiple per fruit class)
+    class_threshold: float, optional
+        Threshold to compute the fruit class according to the colour distance from its healthy part. Pixels of the
+        colour image having a Mahalanobis distance greater than it are not considered part of the corresponding healthy
+        fruit region (default: 3)
     image_name: str, optional
         Optional name of the image to visualize during the plotting operations
     tweak_factor: float, optional
-        Tweak factor to apply to the "Tweaked Otsu's Algorithm" in order to obtain the binary mask.
+        Tweak factor to apply to the "Tweaked Otsu's Algorithm" in order to obtain the binary segmentation mask
+        (default: 0.4)
     verbose: bool, optional
         Whether to run the function in verbose mode or not (default: True)
 
@@ -64,17 +75,18 @@ def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List
     gray_img = cv.cvtColor(f_img, cv.COLOR_BGR2GRAY)
 
     # Get the fruit mask through Tweaked Otsu's algorithm
-    mask = get_fruit_mask(gray_img, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
+    mask = get_fruit_segmentation_mask(gray_img, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
 
     # Apply the mask to the filtered colour image
     m_image = cv.cvtColor(mask, cv.COLOR_GRAY2BGR) + f_img
 
     # Turn BGR image to LAB
-    m_lab_image = ColourSpace('LAB').bgr_to_color_space(m_image)
+    m_lab_image = ColourSpace('LAB').bgr_to_colour_space(m_image)
     channels = (1, 2)
 
     # Get the fruit class
-    fruit_class = get_fruit_class(m_lab_image, h_means, h_inv_covs, channels, display_image=image if verbose else None)
+    fruit_class = get_fruit_class(m_lab_image, h_means, h_inv_covs, channels=channels, threshold=class_threshold,
+                                  display_image=image if verbose else None)
 
     if verbose:
         print(f'Class of fruit = {fruit_class}')
@@ -89,7 +101,7 @@ def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List
     # Get the mask of each possible russet of the fruit and apply a bitwise
     # OR between it and the previous ROI mask
     for m, c, t in zip(roi_means[fruit_class], roi_inv_covs[fruit_class], roi_thresholds[fruit_class]):
-        roi_mask += get_mahalanobis_distance_img(m_lab_image, m, c, t, channels)
+        roi_mask += get_mahalanobis_distance_segmented_image(m_lab_image, m, c, t, channels)
 
     # Remove artifacts from the ROI mask
     roi_mask = roi_mask & eroded_mask
@@ -142,6 +154,9 @@ def _main():
     parser.add_argument('--tweak-factor', '-tf', type=float, default=.4, nargs='?',
                         help='Tweak factor for obtaining the binary mask.', required=False)
 
+    parser.add_argument('--class-threshold', '-ct', type=float, default=3, nargs='?',
+                        help='Distance threshold to compute the class of the fruit.', required=False)
+
     parser.add_argument('--no-verbose', '-nv', action='store_true', help='Skip the visualization of the results.')
 
     # Initialize parser
@@ -156,6 +171,7 @@ def _main():
     config_file_path = arguments.config_file_path
     data_folder_path = arguments.data_folder_path
     tweak_factor = arguments.tweak_factor
+    class_threshold = arguments.class_threshold
     verbose = not arguments.no_verbose
 
     # Get config file
@@ -187,7 +203,8 @@ def _main():
 
     # Apply russet detection
     detect_russet(colour_image, healthy_fruit_means, healthy_fruit_inv_covs, roi_means_sorted, roi_inv_cov_sorted,
-                  roi_thresholds_sorted, tweak_factor=tweak_factor, image_name=image_name, verbose=verbose)
+                  roi_thresholds_sorted, class_threshold=class_threshold, tweak_factor=tweak_factor,
+                  image_name=image_name, verbose=verbose)
 
 
 if __name__ == '__main__':
