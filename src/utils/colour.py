@@ -155,9 +155,10 @@ def plot_colour_distribution_2d(image: _np.ndarray, image_name: str, colour_spac
 
     channels_mapping = {idx: ch for idx, ch in enumerate(colour_space.channels)}
 
+    # Turn the colored image into the defined colour space
+    img = colour_space.bgr_to_colour_space(image)
+
     for idx, channel_indices in enumerate([[0, 1], [0, 2], [1, 2]]):
-        # Turn the colored image into the defined colour space
-        img = colour_space.bgr_to_colour_space(image)
 
         # Get channels of the image, flatten them and remove masked pixels
         channels = [img[:, :, ch] for ch in channel_indices]

@@ -132,6 +132,9 @@ def plot_image_histogram_2d(image: _np.ndarray, image_name: str, colour_space: _
 
     channels_mapping = {idx: ch for idx, ch in enumerate(colour_space.channels)}
 
+    # Turn the colored image into the defined colour space
+    image = colour_space.bgr_to_colour_space(image)
+
     for idx, channels in enumerate([[0, 1], [0, 2], [1, 2]]):
         hist = _cv.calcHist([image], channels, None, [bins] * 2, [0, 256] * 2)
 
@@ -156,3 +159,44 @@ def plot_image_histogram_2d(image: _np.ndarray, image_name: str, colour_space: _
     fig.suptitle(f'2D Colour Histograms of image {image_name} with {bins} bins in colour space {colour_space.name}',
                  fontsize=16)
     _plt.show()
+
+
+def get_largest_blob_in_mask(mask: _np.ndarray) -> _np.ndarray:
+    """
+    Function to get the largest blob in a binary mask.
+
+    Parameters
+    ----------
+    mask: ndarray
+        The mask from which the largest blob is extracted
+
+    Returns
+    -------
+    mask_with_largest_blob: ndarray
+        The mask with solely the largest blob
+    """
+    contours, _ = _cv.findContours(mask, _cv.RETR_EXTERNAL, _cv.CHAIN_APPROX_NONE)
+    max_contour = max(contours, key=_cv.contourArea)
+    out = _np.zeros(mask.shape, _np.uint8)
+    return _cv.drawContours(out, [max_contour], -1, 255, _cv.FILLED)
+
+
+def apply_mask_to_image(image: _np.ndarray, mask: _np.ndarray):
+    """
+    Function that applies a mask over an image
+
+    Parameters
+    ----------
+    image: ndarray
+        Image to apply the mask over
+    mask: ndarray
+        Mask to apply over the image
+
+    Returns
+    -------
+    masked_image: ndarray
+        The masked image
+    """
+    if len(image.shape) == 3:
+        mask = _cv.cvtColor(mask, _cv.COLOR_GRAY2BGR)
+    return image & mask
