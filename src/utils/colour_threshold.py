@@ -190,7 +190,10 @@ def get_mean_and_inverse_covariance_matrix(samples: _List[_np.ndarray], colour_s
     # Divide the sum of covariances by the number of samples
     covariance = covariance_tot / len(samples)
 
-    return mean, _np.linalg.inv(covariance)
+    # Invert covariance with SVD decomposition
+    inv_cov = _cv.invert(covariance, _cv.DECOMP_SVD)[1]
+
+    return mean, inv_cov
 
 
 def get_mahalanobis_distance_segmented_image(image: _np.ndarray, mean: _np.ndarray,
