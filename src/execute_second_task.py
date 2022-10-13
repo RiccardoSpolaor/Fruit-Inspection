@@ -68,14 +68,14 @@ def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List
     centroids: np.ndarray
         Array of centroid points about each russet region.
     """
-    # Filter the image by median blur
-    f_img = cv.medianBlur(image, 5)
+    # Filter the image by bilateral filter
+    f_img = cv.bilateralFilter(image, d=5, sigmaColor=75, sigmaSpace=75)
 
-    # Convert the image to gray-scale
-    gray_img = cv.cvtColor(f_img, cv.COLOR_BGR2GRAY)
+    # Convert the image to gray-scale and median blur it by a 5 x 5 kernel
+    f_gray = cv.medianBlur(cv.cvtColor(image, cv.COLOR_BGR2GRAY), 5)
 
     # Get the fruit mask through Tweaked Otsu's algorithm
-    mask = get_fruit_segmentation_mask(gray_img, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
+    mask = get_fruit_segmentation_mask(f_gray, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
 
     # Apply the mask to the filtered colour image
     m_image = cv.cvtColor(mask, cv.COLOR_GRAY2BGR) + f_img
