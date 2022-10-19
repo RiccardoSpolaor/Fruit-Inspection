@@ -17,69 +17,18 @@ from utils.colour_threshold import *
 from utils.threshold import *
 from utils.general import *
 
-def final_challenge(colour_image: np.ndarray, nir_image: np.ndarray, mean: np.ndarray, inv_cov: np.ndarray,
-                  roi_threshold: int, class_threshold: float = 3, tweak_factor: float = .4,
-                  sigma: float = 1., threshold_1: int = 50, threshold_2: int = 850,
+def analyze_fruit(colour_image: np.ndarray, nir_image: np.ndarray, mean: np.ndarray, inv_cov: np.ndarray,
+                  roi_threshold: int = 10,  tweak_factor: float = .4,
+                  sigma: float = 1., threshold_1: int = 50, threshold_2: int = 85,
                   image_name: str = '', verbose: bool = True) -> Tuple[int, np.ndarray, np.ndarray]:
-    """
-    Function that executes the task of detecting the russet regions of a fruit.
 
-    It firstly detects the class of the fruit, then it looks for the russet regions that can be present according to the
-    class of the fruit.
-
-    If the task is run in `verbose` mode, then the procedure of the detection of the fruit class is plotted along with
-    the visualization of the russet regions in the fruit.
-
-    Parameters
-    ----------
-    image: np.ndarray
-        Colour image of the fruit whose russet has to be detected
-    h_means: List[np.ndarray]
-        List of the mean LAB colour values of the healthy part of the fruits (one mean per fruit class)
-    h_inv_covs: List[np.ndarray]
-        List of inverse covariance matrices of the healthy fruit parts computed on the LAB colour space (one covariance
-        matrix per fruit class)
-    roi_means: List[List[np.ndarray]]
-        List of list of mean LAB colour values of the russet regions of the fruits (one or multiple per fruit class)
-    roi_inv_covs: List[List[np.ndarray]]
-        List of list of inverse covariance matrices of the russet regions of the fruits computed on the LAB colour space
-        (one or multiple per fruit class)
-    roi_thresholds: List[List[int]]
-        List of list of thresholds. Pixels of the colour image having a Mahalanobis distance greater than a certain
-        thresholds are not considered part of the corresponding russet region (one or multiple per fruit class)
-    class_threshold: float, optional
-        Threshold to compute the fruit class according to the colour distance from its healthy part. Pixels of the
-        colour image having a Mahalanobis distance greater than it are not considered part of the corresponding healthy
-        fruit region (default: 3)
-    image_name: str, optional
-        Optional name of the image to visualize during the plotting operations
-    tweak_factor: float, optional
-        Tweak factor to apply to the "Tweaked Otsu's Algorithm" in order to obtain the binary segmentation mask
-        (default: 0.4)
-    verbose: bool, optional
-        Whether to run the function in verbose mode or not (default: True)
-
-    Returns
-    -------
-    retval: int
-        Number of russet regions found in the fruit
-    stats: np.ndarray
-        Array of statistics about each russet region:
-            - The leftmost (x) coordinate which is the inclusive start of the bounding box in the horizontal direction;
-            - The topmost (y) coordinate which is the inclusive start of the bounding box in the vertical direction;
-            - The horizontal size of the bounding box;
-            - The vertical size of the bounding box;
-            - The total area (in pixels) of the russet.
-    centroids: np.ndarray
-        Array of centroid points about each russet region.
-    """
     # Filter the image by median blur
     f_img = cv.medianBlur(nir_image, 7)
 
     # Get the fruit mask through Tweaked Otsu's algorithm
     mask = get_fruit_segmentation_mask(f_img, ThresholdingMethod.TWEAKED_OTSU, tweak_factor=tweak_factor)
 
-    # Perform two openings to clean the mask 
+    # Perform two openings to clean up the mask 
     se1 = cv.getStructuringElement(cv.MORPH_ELLIPSE, (20,5))
     se2 = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5,20))
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, se1)
@@ -147,8 +96,72 @@ def final_challenge(colour_image: np.ndarray, nir_image: np.ndarray, mean: np.nd
 
 
 def _main():
+    parser = argparse.ArgumentParser(description='Script for defect location on a fruit.')
 
-   # TODO
+    parser.add_argument('fruit-image-path', metavar='Fruit image path', type=str,
+                        help='The path of the colour image of the fruit.')
+
+    parser.add_argument('fruit-nir-image-path', metavar='Fruit image path', type=str,
+                        help='The path of the Near Infra-Red image of the fruit.')
+
+    parser.add_argument('image-name', metavar='Image name', type=str, help='The name of the image.', default='',
+                        nargs='?')
+
+    parser.add_argument('--tweak-factor', '-tf', type=float, default=.3, nargs='?',
+                        help='Tweak factor for obtaining the binary mask.', required=False)
+
+    parser.add_argument('--sigma', '-s', type=float, default=1., nargs='?',
+                        help="Sigma to apply to the Gaussian Blur operation before Canny's algorithm",
+                        required=False)
+
+    parser.add_argument('--threshold-1', '-t1', type=int, default=50, nargs='?',
+                        help="First threshold that is used in Canny's algorithm.", required=False)
+
+    parser.add_argument('--threshold-2', '-t2', type=int, default=85, nargs='?',
+                        help="Second threshold that is used in Canny's algorithm.", required=False)
+
+    parser.add_argument('--no-verbose', '-nv', action='store_true', help='Skip the visualization of the results.')
+
+    # TODO aggiungere il np.array (chiedere a riccardo come fare)
+
+    parser.add_argument('--mean-file-path', '-meanf', type=str, help='The path of the mean.npy file.',
+                    default=os.path.join(os.path.dirname(__file__), f'data/mean_final_challenge.npy'), nargs='?',
+                    required=False)
+
+    parser.add_argument('--cov-file-path', '-covf', type=str, help='The path of the inv_cov.npy file.',
+                default=os.path.join(os.path.dirname(__file__), f'data/inv_cov_final_challenge.npy'), nargs='?',
+                required=False)
+
+
+    parser.add_argument('--roi-threshold', '-ct', type=int, default=10, nargs='?',
+                        help='Distance threshold to compute the class of the fruit.', required=False)
+
+    parser.add_argument('--no-verbose', '-nv', action='store_true', help='Skip the visualization of the results.')
+
+    arguments = parser.parse_args()
+
+    # Read colour image
+    fruit_image_path = vars(arguments)['fruit-image-path']
+    colour_image = cv.imread(fruit_image_path)
+
+    # Read NIR image
+    fruit_nir_image_path = vars(arguments)['fruit-nir-image-path']
+    nir_image = cv.imread(fruit_nir_image_path, cv.IMREAD_GRAYSCALE)
+
+    image_name = vars(arguments)['image-name']
+
+    tweak_factor = arguments.tweak_factor
+    sigma = arguments.sigma
+    threshold_1 = arguments.threshold_1
+    threshold_2 = arguments.threshold_2
+    roi_threshold = arguments.roi_threshold
+    verbose = not arguments.no_verbose
+
+
+    mean = np.load(arguments.mean_file_path)
+    inv_cov = np.load(arguments.inv_cov_file_path)
+
+    analyze_fruit(colour_image, nir_image, mean, inv_cov, roi_threshold, tweak_factor, sigma, threshold_1, threshold_2, '', verbose)
 
 
 if __name__ == '__main__':
