@@ -116,7 +116,7 @@ def detect_russet(image: np.ndarray, h_means: List[np.ndarray], h_inv_covs: List
     retval, labels, stats, centroids = cv.connectedComponentsWithStats(roi_mask)
 
     if verbose:
-        print(f'Detected {retval - 1} russet areas.')
+        print(f'Detected {retval - 1} defect{"" if retval - 1 == 1 else "s"} for image {image_name}.')
 
         # Get highlighted russet on the fruit
         highlighted_roi = get_highlighted_roi_by_mask(image, roi_mask)
