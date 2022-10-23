@@ -17,7 +17,7 @@ def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, mean: np.nda
                    sigma: float = 1., threshold_1: int = 50, threshold_2: int = 85,
                    image_name: str = '', verbose: bool = True) -> Tuple[int, np.ndarray, np.ndarray]:
     """
-    Function that executes the task of detecting the defects of a fruit.
+    Function that executes the task of detecting the defects of a fruit in a very noisy environment.
 
     It firstly masks the fruit, then it looks for the defects.
 
@@ -53,16 +53,16 @@ def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, mean: np.nda
     Returns
     -------
     retval: int
-        Number of russet regions found in the fruit
+        Number of defect regions found in the fruit
     stats: np.ndarray
-        Array of statistics about each russet region:
+        Array of statistics about each defect region:
             - The leftmost (x) coordinate which is the inclusive start of the bounding box in the horizontal direction;
             - The topmost (y) coordinate which is the inclusive start of the bounding box in the vertical direction;
             - The horizontal size of the bounding box;
             - The vertical size of the bounding box;
-            - The total area (in pixels) of the russet.
+            - The total area (in pixels) of the defect.
     centroids: np.ndarray
-        Array of centroid points about each russet region.
+        Array of centroid points about each defect region.
     """
 
     # Filter the colour image by bilateral filter
