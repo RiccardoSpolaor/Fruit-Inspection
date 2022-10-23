@@ -164,11 +164,13 @@ def _main():
     parser.add_argument('--threshold-2', '-t2', type=int, default=85, nargs='?',
                         help="Second threshold that is used in Canny's algorithm.", required=False)
 
-    parser.add_argument('--mean-file-path', '-m', type=str, help='The path of the mean file.',
+    parser.add_argument('--mean-file-path', '-m', type=str, 
+                        help='The path of the mean file of the colour of the kiwi region.',
                         default=os.path.join(os.path.dirname(__file__), 'data/mean_final_challenge.npy'), nargs='?',
                         required=False)
 
-    parser.add_argument('--inv-cov-file-path', '-inv-cov', type=str, help='The path of the inv_cov file.',
+    parser.add_argument('--inv-cov-file-path', '-inv-cov', type=str, 
+                        help='The path of the invverse covariance matrix file of the colour of the kiwi region.',
                         default=os.path.join(os.path.dirname(__file__), 'data/inv_cov_final_challenge.npy'), nargs='?',
                         required=False)
 
