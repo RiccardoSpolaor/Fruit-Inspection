@@ -41,16 +41,16 @@ def detect_defects(colour_image: np.ndarray, nir_image: np.ndarray, image_name: 
     Returns
     -------
     retval: int
-        Number of russet regions found in the fruit
+        Number of defect regions found in the fruit
     stats: np.ndarray
-        Array of statistics about each russet region:
+        Array of statistics about each defect region:
             - The leftmost (x) coordinate which is the inclusive start of the bounding box in the horizontal direction;
             - The topmost (y) coordinate which is the inclusive start of the bounding box in the vertical direction;
             - The horizontal size of the bounding box;
             - The vertical size of the bounding box;
-            - The total area (in pixels) of the russet.
+            - The total area (in pixels) of the defect.
     centroids: np.ndarray
-        Array of centroid points about each russet region.
+        Array of centroid points about each defect region.
     """
     # Filter the NIR image by median blur
     f_nir_image = cv.medianBlur(nir_image, 5)
