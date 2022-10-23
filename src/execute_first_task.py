@@ -120,10 +120,10 @@ def _main():
                         required=False)
 
     parser.add_argument('--threshold-1', '-t1', type=int, default=60, nargs='?',
-                        help="First threshold that is used in Canny's algorithm.", required=False)
+                        help="First threshold that is used in Canny's algorithm hysteresis process.", required=False)
 
     parser.add_argument('--threshold-2', '-t2', type=int, default=130, nargs='?',
-                        help="Second threshold that is used in Canny's algorithm.", required=False)
+                        help="Second threshold that is used in Canny's algorithm hysteresis process.", required=False)
 
     parser.add_argument('--no-verbose', '-nv', action='store_true', help='Skip the visualization of the results.')
 
