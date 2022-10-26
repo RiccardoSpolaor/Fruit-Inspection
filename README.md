@@ -88,18 +88,6 @@ The script positional arguments are:
 * `fruit-nir-image-path`: The path of the Near Infra-Red image of the fruit.
 * `image-name` (optional): The name of the image.
 
-    parser.add_argument('--mean-file-path', '-m', type=str, help='The path of the mean file.',
-                        default=os.path.join(os.path.dirname(__file__), 'data/mean_final_challenge.npy'), nargs='?',
-                        required=False)
-
-    parser.add_argument('--inv-cov-file-path', '-inv-cov', type=str, help='The path of the inv_cov file.',
-                        default=os.path.join(os.path.dirname(__file__), 'data/inv_cov_final_challenge.npy'), nargs='?',
-                        required=False)
-
-    parser.add_argument('--roi-threshold', '-t', type=int, default=10, nargs='?',
-                        help='Distance threshold to segment the fruit from the sticker.', required=False)
-
-
 The following optional non positional arguments are present:
 * `--tweak-factor`, `-tf` (default=0.3): Tweak factor for obtaining the binary mask.
 * `--sigma`, `-s` (default=1): Sigma to apply to the Gaussian Blur operation before Canny's algorithm.
