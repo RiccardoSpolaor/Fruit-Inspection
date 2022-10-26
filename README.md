@@ -1,5 +1,5 @@
 # :apple: 🥝 Fruit Inspection :mag:
-The use of modern *Image Processing* and *Computer Visioné techniques is widely spread in the fruit supply chain as a way of guaranteeing quality and homogeneity of the final product to the end-users, whilst reducing both production costs and times.
+The use of modern *Image Processing* and *Computer Vision* techniques is widely spread in the fruit supply chain as a way of guaranteeing quality and homogeneity of the final product to the end-users, whilst reducing both production costs and times.
 
 The present project, describes the implementation of an intelligent system capable of detecting imperfections and defects in fruits. Each fruit is acquired through a *NIR (Near Infra-Red)* and colour camera with little parallax effect.
 
