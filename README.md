@@ -41,7 +41,7 @@ The following optional non positional arguments are present:
 * `--tweak-factor`, `-tf` (default=0.3): Tweak factor for obtaining the binary mask.
 * `--sigma`, `-s` (default=1): Sigma to apply to the Gaussian Blur operation before Canny's algorithm.
 * `--threshold-1`, `-t1` (default=60): First threshold that is used in Canny's algorithm hysteresis process.
-* `--threshold-2`, `-t2` (default=60): Second threshold that is used in Canny's algorithm hysteresis process.
+* `--threshold-2`, `-t2` (default=120): Second threshold that is used in Canny's algorithm hysteresis process.
 * `--no-verbose`, `-nv` (default=False); Skip the visualization of the results.
 
 It returns:
@@ -89,10 +89,10 @@ The script positional arguments are:
 * `image-name` (optional): The name of the image.
 
 The following optional non positional arguments are present:
-* `--tweak-factor`, `-tf` (default=0.3): Tweak factor for obtaining the binary mask.
+* `--tweak-factor`, `-tf` (default=0.4): Tweak factor for obtaining the binary mask.
 * `--sigma`, `-s` (default=1): Sigma to apply to the Gaussian Blur operation before Canny's algorithm.
-* `--threshold-1`, `-t1` (default=60): First threshold that is used in Canny's algorithm hysteresis process.
-* `--threshold-2`, `-t2` (default=60): Second threshold that is used in Canny's algorithm hysteresis process.
+* `--threshold-1`, `-t1` (default=50): First threshold that is used in Canny's algorithm hysteresis process.
+* `--threshold-2`, `-t2` (default=85): Second threshold that is used in Canny's algorithm hysteresis process.
 * `--mean-file-path`, `-m`: The path of the mean file of the colour of the kiwi region.
 * `--inv-cov-file-path`, `-inv-cov`: The path of the inverse covariance matrix file of the colour of the kiwi region.
 * `--roi-threshold`, `-t` (default=10): Distance threshold to segment the fruit from the sticker.
